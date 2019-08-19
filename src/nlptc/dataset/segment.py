@@ -16,8 +16,8 @@ class SegmentData(DataSet):
         self.train_data = None
         self.test_data = None
         self.tagger = None
-        if tagger == 'bmse':
-            self.tagger = nlp_tagger.bmse_tagger
+        if tagger == 'bmes':
+            self.tagger = nlp_tagger.bmes_tagger
         self.__load_all()
 
     def __load_all(self):

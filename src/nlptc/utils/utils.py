@@ -16,7 +16,7 @@ def sequence_mask(lengths, maxlen=None):
 
 def log_sum_exp(vec):
     max_score = nd.max(vec, axis=-1).expand_dims(-1)
-    return nd.log(nd.sum(nd.exp(vec - max_score)), axis=-1) + max_score.squeeze()
+    return nd.log(nd.sum(nd.exp(vec - max_score), axis=-1)) + max_score.squeeze()
 
 def to_int(x):
     return int(x.asscalar())

@@ -6,10 +6,9 @@ from ..utils import sequence_mask
 
 
 class CNNWE(nn.Block):
-    def __init__(self, seq_lens, vocab_size, embed_size, kernel_size, hidden_layers, channels, num_outputs, drop_prob, **kwargs):
-        super.__init__(**kwargs)
+    def __init__(self, vocab_size, embed_size, kernel_size, hidden_layers, channels, num_outputs, drop_prob, **kwargs):
+        super().__init__(**kwargs)
 
-        self.mask = nd.swapaxes(nd.expand_dims(nd.array(sequence_mask(seq_lens)), -1), 1, 2)
         self.embedding = nn.Sequential()
         self.embedding.add(nn.Embedding(vocab_size, embed_size))
         self.embedding.add(nn.Dropout(drop_prob))
@@ -34,7 +33,7 @@ class CNNWE(nn.Block):
         output = self.embedding(x)
         output = nd.swapaxes(output, 1, 2)
         for conv in self.conv_nets:
-            output = conv(output) * self.mask
+            output = conv(output)
         output = nd.swapaxes(output, 1, 2)
         output = self.output_layer(output)
         return output

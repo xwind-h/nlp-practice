@@ -16,6 +16,6 @@ def train():
     channels = [200] * 5
     drop_prob = 0.2
 
-    model = CNNWE(seq_lens=seq_lens, vocab_size=vocab_size, embed_size=embed_size, kernel_size=kernel_size,
+    model = CNNWE(vocab_size=vocab_size, embed_size=embed_size, kernel_size=kernel_size,
                   hidden_layers=hidden_layers, channels=channels, num_outputs=tag_size, drop_prob=drop_prob)
 

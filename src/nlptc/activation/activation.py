@@ -8,4 +8,4 @@ class GLU(nn.Block):
         self.v = v
 
     def forward(self, x):
-        return self.w(x) * nd.sigmoid(v(x))
+        return self.w(x) * nd.sigmoid(self.v(x))

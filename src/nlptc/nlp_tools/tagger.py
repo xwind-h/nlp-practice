@@ -5,7 +5,7 @@ def bmes_tagger(sentence):
     for w in sentence:
         chars.extend(list(w))
         if len(w) == 1:
-            tags.extend('S')
+            tags.extend(['S'])
         else:
             tags.extend(['B'] + ['M'] * (len(w) - 2) + ['E'])
     return chars, tags

@@ -20,13 +20,14 @@ class CRF(nn.Block):
         :return: shape=(batch_size,)
         """
         state_feats_tmp = state_feats.transpose((1, 0, 2))
-        alpha = nd.full((state_feats.shape[0], self._tag_size), -10000.)
-        alpha[:, self._start_tag_idx] = 0.
+        alpha = state_feats_tmp[0]
 
-        for feat in state_feats_tmp:
-            score = feat.expand_dims(1) + self._transitions.data()
-            alpha = log_sum_exp(alpha.expand_dims(1) + score.transpose((0, 2, 1)))
-        alpha = log_sum_exp(alpha + self._transitions.data()[:, self._stop_tag_idx])
+        if state_feats_tmp.shape[0] > 1:
+            for feat in state_feats_tmp[1:]:
+                score = feat.expand_dims(1) + self._transitions.data()
+                alpha = log_sum_exp(alpha.expand_dims(1) + score.transpose((0, 2, 1)))
+
+        alpha = log_sum_exp(alpha)
         return alpha
 
     def _seq_score(self, state_feats, tag_seq):
@@ -35,20 +36,17 @@ class CRF(nn.Block):
         :param tag_seq: shape=(batch_size, seq_len)
         :return: shape=(batch_size,)
         """
-        score = nd.zeros(shape=state_feats.shape[0])
-
         # state_feats_tmp: shape=(seq_len, batch_size, tag_size)
         state_feats_tmp = state_feats.transpose((1, 0, 2))
         # tag_seq_tmp: shape=(seq_len, batch_size)
         tag_seq_tmp = tag_seq.transpose()
-        pad = nd.full((1, tag_seq_tmp.shape[-1]), self._start_tag_idx)
-        tag_seq_tmp = nd.concat(pad, tag_seq_tmp, dim=0)
 
-        for idx, feat in enumerate(state_feats_tmp):
-            score = score + nd.pick(feat, tag_seq_tmp[idx + 1], axis=1) + \
-                     nd.pick(self._transitions.data()[tag_seq_tmp[idx]], tag_seq_tmp[idx + 1], axis=1)
+        score = nd.pick(state_feats_tmp[0], tag_seq_tmp[0], axis=1)
+        if state_feats_tmp.shape[0] > 1:
+            for idx, feat in enumerate(state_feats_tmp[1:]):
+                score = score + nd.pick(feat, tag_seq_tmp[idx + 1], axis=1) + \
+                        nd.pick(self._transitions.data()[tag_seq_tmp[idx]], tag_seq_tmp[idx + 1], axis=1)
 
-        score = score + self._transitions.data()[tag_seq_tmp[-1], self._stop_tag_idx]
         return score
 
     def neg_log_likehood(self, x, tag_seq):
@@ -77,7 +75,8 @@ class CRF(nn.Block):
         max_score[:, self._start_tag_idx] = 0
 
         for feat in state_feats_tmp:
-            next_tag_score = max_score.expand_dims(1) + (feat.expand_dims(1) + self._transitions.data()).transpose((0, 2, 1))
+            next_tag_score = max_score.expand_dims(1) + (feat.expand_dims(1) + self._transitions.data()).transpose(
+                (0, 2, 1))
             backpointers.append(nd.argmax(next_tag_score, axis=-1))
             max_score = nd.max(next_tag_score, axis=-1)
 

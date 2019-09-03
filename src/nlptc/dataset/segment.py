@@ -9,7 +9,7 @@ class SegmentData(DataSet):
     __data_sets = ["sighan2005-msr", "sighan2005-pku"]
 
     def __init__(self, data_name, tagger=None, **kwargs):
-        super.__init__(**kwargs)
+        super().__init__(**kwargs)
         if data_name not in SegmentData.__data_sets:
             raise RuntimeError("Data set dose not exist!")
         self.file_path = os.path.join("/Users/xh0543/workspace/nlp-practice/data/segment", data_name)
@@ -40,6 +40,6 @@ class SegmentData(DataSet):
         for seq in data:
             tag_data.append(self.tagger(seq))
 
-        return zip(*tag_data)
+        return list(zip(*tag_data))
 
 

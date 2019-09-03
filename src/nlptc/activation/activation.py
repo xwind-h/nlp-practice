@@ -3,7 +3,8 @@ from mxnet import nd
 
 
 class GLU(nn.Block):
-    def __init__(self, w, v):
+    def __init__(self, w, v, **kwargs):
+        super().__init__(**kwargs)
         self.w = w
         self.v = v
 

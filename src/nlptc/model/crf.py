@@ -71,14 +71,14 @@ class CRF(nn.Block):
         state_feats_tmp = state_feats.transpose((1, 0, 2))
 
         batch_size = state_feats.shape[0]
-        max_score = nd.full((batch_size, self._tag_size), -10000.)
-        max_score[:, self._start_tag_idx] = 0
+        max_score = state_feats_tmp[0]
 
-        for feat in state_feats_tmp:
-            next_tag_score = max_score.expand_dims(1) + (feat.expand_dims(1) + self._transitions.data()).transpose(
-                (0, 2, 1))
-            backpointers.append(nd.argmax(next_tag_score, axis=-1))
-            max_score = nd.max(next_tag_score, axis=-1)
+        if state_feats_tmp.shape[0] > 1:
+            for feat in state_feats_tmp[1:]:
+                next_tag_score = max_score.expand_dims(1) + (feat.expand_dims(1) + self._transitions.data()).transpose(
+                    (0, 2, 1))
+                backpointers.append(nd.argmax(next_tag_score, axis=-1))
+                max_score = nd.max(next_tag_score, axis=-1)
 
         max_score += self._transitions.data()[:, self._stop_tag_idx]
         best_tag = nd.argmax(max_score, axis=-1)

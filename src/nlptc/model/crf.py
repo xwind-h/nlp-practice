@@ -5,11 +5,9 @@ from nlptc.utils.utils import log_sum_exp
 
 
 class CRF(nn.Block):
-    def __init__(self, tag_size, start_tag_idx=None, stop_tag_idx=None):
+    def __init__(self, tag_size):
         super().__init__()
         self._tag_size = tag_size
-        self._start_tag_idx = start_tag_idx if start_tag_idx is not None else 0
-        self._stop_tag_idx = stop_tag_idx if stop_tag_idx is not None else (tag_size - 1)
 
         # transition score of tag, shape=(tag_size, tag_size)
         self._transitions = self.params.get('transition', shape=(self._tag_size, self._tag_size))
@@ -67,10 +65,7 @@ class CRF(nn.Block):
             best_path: shape=(batch_size, seq_len)
         """
         backpointers = []
-
         state_feats_tmp = state_feats.transpose((1, 0, 2))
-
-        batch_size = state_feats.shape[0]
         max_score = state_feats_tmp[0]
 
         if state_feats_tmp.shape[0] > 1:
@@ -80,15 +75,12 @@ class CRF(nn.Block):
                 backpointers.append(nd.argmax(next_tag_score, axis=-1))
                 max_score = nd.max(next_tag_score, axis=-1)
 
-        max_score += self._transitions.data()[:, self._stop_tag_idx]
         best_tag = nd.argmax(max_score, axis=-1)
         path_score = nd.pick(max_score, best_tag)
 
         best_path = [best_tag]
         for bp in reversed(backpointers):
             best_path.append(nd.pick(bp, best_path[-1]))
-        start = best_path.pop()
-        assert nd.sum(start == nd.array([self._start_tag_idx] * batch_size)).asscalar() == batch_size
 
         best_path.reverse()
         best_path = nd.concat(*map(lambda x: x.expand_dims(0), best_path), dim=0).transpose()

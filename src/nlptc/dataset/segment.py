@@ -12,7 +12,7 @@ class SegmentData(DataSet):
         super().__init__(**kwargs)
         if data_name not in SegmentData.__data_sets:
             raise RuntimeError("Data set dose not exist!")
-        self.file_path = os.path.join("/Users/xh0543/workspace/nlp-practice/data/segment", data_name)
+        self.file_path = os.path.join("/Users/xh0543/nlp_data/segment", data_name)
         self.train_data = None
         self.test_data = None
         self.tagger = None

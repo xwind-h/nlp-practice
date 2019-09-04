@@ -12,5 +12,5 @@ class SPConv1D(nn.Block):
 
     def forward(self, x):
         x = nd.pad(x.expand_dims(0), pad_width=(0, 0, 0, 0, 0, 0, self.left_padding, self.right_padding),
-                   mode='constant').squeeze()
+                   mode='constant').squeeze(axis=0)
         return self.cnn(x)

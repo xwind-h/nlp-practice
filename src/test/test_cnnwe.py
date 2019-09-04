@@ -13,7 +13,9 @@ model = model.CNNWE(vocab_size=vocab_size, embed_size=embed_size, kernel_size=ke
                     hidden_layers=hidden_layers, channels=channels, num_outputs=tag_size, drop_prob=drop_prob)
 model.initialize()
 
-x = nd.random_randint(low=1, high=10, shape=(5, 4))
-y = nd.random_randint(low=0, high=7, shape=(5, 4))
-print(x)
+x = nd.random_randint(low=1, high=10, shape=(1, 4))
+y = model(x)
 print(y)
+
+x = nd.random_randint(low=1, high=10, shape=(1, 5))
+print(model(x))

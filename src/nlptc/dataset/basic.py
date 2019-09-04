@@ -7,7 +7,7 @@ class DataSet(object):
 
 
 class Vocab(object):
-    def __init__(self, data, min_freq=0, unk='<unk>'):
+    def __init__(self, data, min_freq=0, unk=None):
         self.count_dir = self.__count(data)
 
         rm_words = []
@@ -19,7 +19,8 @@ class Vocab(object):
 
         self.idx_to_word = list(self.count_dir.keys())
         self.unk = unk
-        self.idx_to_word.append(unk)
+        if self.unk is not None:
+            self.idx_to_word.append(unk)
 
         self.word_to_idx = {}
         for i, w in enumerate(self.idx_to_word):
@@ -35,4 +36,7 @@ class Vocab(object):
         return count_dir
 
     def to_indices(self, seq):
-        return [self.word_to_idx[w] if w in self.word_to_idx else self.word_to_idx[self.unk] for w in seq]
+        if self.unk is not None:
+            return [self.word_to_idx[w] if w in self.word_to_idx else self.word_to_idx[self.unk] for w in seq]
+        else:
+            return [self.word_to_idx[w] for w in seq]

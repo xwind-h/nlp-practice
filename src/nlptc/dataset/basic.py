@@ -1,3 +1,9 @@
+import codecs
+import os
+
+from mxnet import nd
+
+
 class DataSet(object):
     __data_sets = []
 
@@ -40,3 +46,31 @@ class Vocab(object):
             return [self.word_to_idx[w] if w in self.word_to_idx else self.word_to_idx[self.unk] for w in seq]
         else:
             return [self.word_to_idx[w] for w in seq]
+
+
+class Embedding(object):
+    __embedding_set = ['news_tensite.msr.words.50d', 'news_tensite.pku.words.50d', 'news_tensite.200d']
+
+    def __init__(self, name, vocab):
+        if name not in self.__embedding_set:
+            raise RuntimeError('embedding not exist!')
+        path = os.path.join(os.environ['HOME'], 'nlp_data/embeddings', name)
+        dim = int(name.split(".")[-1][:-1])
+
+        self.idx_to_vec = self.__load(path, vocab, dim)
+        self.idx_to_word = vocab.idx_to_word
+        self.word_to_idx = vocab.word_to_idx
+
+    def __load(self, path, vocab, dim):
+        token_to_vec = {}
+        with codecs.open(path, 'r', 'utf8') as f:
+            for line in f.readlines():
+                tokens = line.strip().split()
+                token_to_vec[tokens[0]] = tokens[1:]
+        matrix = []
+        for w in vocab.idx_to_word:
+            if w in token_to_vec:
+                matrix.append(token_to_vec[w])
+            else:
+                matrix.append([0] * dim)
+        return nd.array(matrix)

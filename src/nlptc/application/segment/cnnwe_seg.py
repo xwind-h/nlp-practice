@@ -1,11 +1,11 @@
-from nlptc.dataset import SegmentData
-from nlptc.dataset.basic import Vocab
+import mxnet as mx
+import time
+from mxnet import autograd, gluon, nd
+from mxnet.gluon import nn
+
+from nlptc.dataset import Embedding, SegmentData, Vocab
 from nlptc.model import CRF
 from nlptc.model.cnnwe import CNNWE
-
-import mxnet as mx
-from mxnet import nd, gluon, autograd
-from mxnet.gluon import nn
 
 
 def train():
@@ -34,11 +34,18 @@ def train():
     model.initialize(mx.init.Xavier())
     optimizer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': 0.001})
 
-    epoch = 10
+    embedding = Embedding('news_tensite.200d', vocab)
+    cnn_model.embedding[0].weight.set_data(embedding.idx_to_vec)
+    cnn_model.embedding[0].collect_params().setattr('grad_req', 'null')
+
+    epoch = 1
     for e in range(epoch):
         likehood = 0
         iter = 0
+        start = time.time()
         for st, tags in zip(train_data, train_tag):
+            if len(st) < 2:
+                continue
             with autograd.record():
                 x = nd.array(st).reshape(1, -1)
                 y = nd.array(tags).reshape(1, -1)
@@ -50,7 +57,9 @@ def train():
             likehood += loss.asscalar()
             iter += 1
             if iter % 100 == 0:
-                print("Epoch %i, iter %i, neg likehood %.4f" % (e, iter, likehood / 100))
+                t = time.time() - start
+                print("Epoch %i, iter %i, neg likehood %.4f, process time: %.4f" % (e, iter, likehood / 100, t))
+                start = time.time()
                 likehood = 0
 
 

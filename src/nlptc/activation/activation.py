@@ -1,12 +1,11 @@
 from mxnet.gluon import nn
-from mxnet import nd
 
 
-class GLU(nn.Block):
+class GLU(nn.HybridBlock):
     def __init__(self, w, v, **kwargs):
         super().__init__(**kwargs)
         self.w = w
         self.v = v
 
-    def forward(self, x):
-        return self.w(x) * nd.sigmoid(self.v(x))
+    def hybrid_forward(self, F, x, *args, **kwargs):
+        return self.w(x) * F.sigmoid(self.v(x))

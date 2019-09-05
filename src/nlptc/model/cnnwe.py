@@ -1,20 +1,18 @@
 from mxnet.gluon import nn
-from mxnet import nd
 
 from nlptc.model.basic import SPConv1D
 from ..activation import GLU
-from ..utils import sequence_mask
 
 
-class CNNWE(nn.Block):
+class CNNWE(nn.HybridBlock):
     def __init__(self, vocab_size, embed_size, kernel_size, hidden_layers, channels, num_outputs, drop_prob, **kwargs):
         super().__init__(**kwargs)
 
-        self.embedding = nn.Sequential()
+        self.embedding = nn.HybridSequential()
         self.embedding.add(nn.Embedding(vocab_size, embed_size))
         self.embedding.add(nn.Dropout(drop_prob))
 
-        self.conv_net = nn.Sequential()
+        self.conv_net = nn.HybridSequential()
         for i in range(hidden_layers):
             w = SPConv1D(channels=channels[i], kernel_size=kernel_size)
             v = SPConv1D(channels=channels[i], kernel_size=kernel_size)
@@ -24,11 +22,11 @@ class CNNWE(nn.Block):
         self.output_layer = nn.Dense(num_outputs, flatten=False)
 
 
-    def forward(self, x):
+    def hybrid_forward(self, F, x, *args, **kwargs):
         output = self.embedding(x)
-        output = nd.swapaxes(output, 1, 2)
+        output = F.swapaxes(output, 1, 2)
         output = self.conv_net(output)
-        output = nd.swapaxes(output, 1, 2)
+        output = F.swapaxes(output, 1, 2)
         output = self.output_layer(output)
         return output
 

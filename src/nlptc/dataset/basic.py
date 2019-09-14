@@ -47,6 +47,10 @@ class Vocab(object):
         else:
             return [self.word_to_idx[w] for w in seq]
 
+    def to_words(self, idx):
+        return [self.idx_to_word[i] for i in idx]
+
+
 
 class Embedding(object):
     __embedding_set = ['news_tensite.msr.words.50d', 'news_tensite.pku.words.50d', 'news_tensite.200d']
@@ -54,7 +58,8 @@ class Embedding(object):
     def __init__(self, name, vocab):
         if name not in self.__embedding_set:
             raise RuntimeError('embedding not exist!')
-        path = os.path.join(os.environ['HOME'], 'nlp_data/embeddings', name)
+        root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+        path = os.path.join(root_path, 'data', 'embeddings', name)
         dim = int(name.split(".")[-1][:-1])
 
         self.idx_to_vec = self.__load(path, vocab, dim)

@@ -12,20 +12,28 @@ class SegmentData(DataSet):
         super().__init__(**kwargs)
         if data_name not in SegmentData.__data_sets:
             raise RuntimeError('Data set dose not exist!')
-        self.file_path = os.path.join(os.environ['HOME'], 'nlp_data/segment', data_name)
+        root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+        self.file_path = os.path.join(root_path, 'data', 'segment', data_name)
         self.train_data = None
         self.test_data = None
+        self.val_data = None
         self.tagger = None
         if tagger == 'bmes':
-            self.tagger = nlp_tagger.bmes_tagger
+            self.tagger = nlp_tagger.BMESTagger()
         self.__load_all()
 
     def __load_all(self):
         train_path = os.path.join(self.file_path, 'train.txt')
-        self.train_data = self.__load(train_path)
+        if os.path.exists(train_path):
+            self.train_data = self.__load(train_path)
 
         test_path = os.path.join(self.file_path, 'test.txt')
-        self.test_data = self.__load(test_path)
+        if os.path.exists(test_path):
+            self.test_data = self.__load(test_path)
+
+        val_path = os.path.join(self.file_path, 'val.txt')
+        if os.path.exists(val_path):
+            self.val_data = self.__load(val_path)
 
     def __load(self, path):
         data = []
@@ -38,8 +46,6 @@ class SegmentData(DataSet):
 
         tag_data = []
         for seq in data:
-            tag_data.append(self.tagger(seq))
+            tag_data.append(self.tagger.tag(seq))
 
         return list(zip(*tag_data))
-
-

@@ -14,12 +14,35 @@ from nlptc.utils import try_gpu
 
 
 def train():
+    ctx = try_gpu()
+
     data = SegmentData('sighan2005-msr', tagger='bmes')
     vocab = Vocab(data.train_data[0], min_freq=5, unk='<unk>')
     tag_vocab = Vocab(data.train_data[1])
 
-    train_data = [vocab.to_indices(seq) for seq in data.train_data[0]]
-    train_tag = [tag_vocab.to_indices(tags) for tags in data.train_data[1]]
+    train_data = []
+    train_tags = []
+    train_size = min(len(data.train_data[0]), len(data.train_data[1]))
+    for i in range(train_size):
+        st = data.train_data[0][i]
+        tags = data.train_data[1][i]
+        if len(st) < 2 or len(tags) < 2:
+            continue
+        train_data.append(nd.array(vocab.to_indices(st), ctx=ctx).reshape(1, -1))
+        train_tags.append(nd.array(tag_vocab.to_indices(tags), ctx=ctx).reshape(1, -1))
+
+    val_seqs = []
+    val_tags = []
+    val_array = []
+    val_size = min(len(data.val_data[0]), len(data.val_data[1]))
+    for i in range(val_size):
+        st = data.val_data[0][i]
+        tags = data.val_data[1][i]
+        if len(st) < 2 or len(tags) < 2:
+            continue
+        val_seqs.append(st)
+        val_tags.append(tags)
+        val_array.append(nd.array(vocab.to_indices(st), ctx=ctx).reshape(1, -1))
 
     vocab_size = len(vocab.idx_to_word)
     tag_size = len(tag_vocab.idx_to_word)
@@ -37,7 +60,6 @@ def train():
     model.add(cnn_model)
     model.add(crf_model)
 
-    ctx = try_gpu()
     model.initialize(mx.init.Xavier(), ctx=ctx)
     optimizer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': 0.001})
 
@@ -55,38 +77,34 @@ def train():
     epoch = 10
     random_idx = list(range(len(train_data)))
     random.shuffle(random_idx)
-    val_size = len(data.val_data[0])
     for e in range(epoch):
         likehood = 0
         iter = 0
         start = time.time()
         for i in random_idx:
             st = train_data[i]
-            tags = train_tag[i]
-            if len(st) < 2:
+            tags = train_tags[i]
+            if st.shape[1] < 2:
                 continue
             with autograd.record():
-                x = nd.array(st, ctx=ctx).reshape(1, -1)
-                y = nd.array(tags, ctx=ctx).reshape(1, -1)
-                output = cnn_model(x)
-                loss = crf_model.neg_log_likehood(output, y).sum()
+                output = cnn_model(st)
+                loss = crf_model.neg_log_likehood(output, tags).sum()
                 loss.backward()
             optimizer.step(1)
 
             likehood += loss.asscalar()
             iter += 1
-            if iter % 10000 == 0:
+            if iter % 100 == 0:
                 t = time.time() - start
                 print("Epoch %i, iter %i, neg likehood %.4f, process time: %.4f sec" % (e, iter, likehood / 100, t))
 
-                j = random.randint(0, val_size)
-                val_st, val_tag = data.val_data[0][j], data.val_data[1][j]
-                x = nd.array(vocab.to_indices(val_st), ctx=ctx).reshape(1, -1)
-                pred_tag = crf_model.viterbi_decode(cnn_model(x))[1].reshape(-1,).asnumpy().astype('int').tolist()
+                j = random.randint(0, len(val_array))
+                val_st = val_array[j]
+                pred_tag = crf_model.viterbi_decode(cnn_model(val_st))[1].reshape(-1,).asnumpy().astype('int').tolist()
                 pred_tag = tag_vocab.to_words(pred_tag)
-                assert len(pred_tag) == len(val_st)
-                st = data.tagger.rebuild(val_st, val_tag)
-                rst = data.tagger.rebuild(val_st, pred_tag)
+                assert len(pred_tag) == val_st.shape[1]
+                st = data.tagger.rebuild(val_seqs[j],val_tags[j])
+                rst = data.tagger.rebuild(val_seqs[j], pred_tag)
                 print('gold: %s' % ' '.join(st))
                 print('predict: %s' % ' '.join(rst))
                 model.save_parameters(model_out)
